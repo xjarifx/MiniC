@@ -45,7 +45,9 @@ gcc build/mycode.s -o build/mycode
 ./build/mycode
 ```
 
-**That's it!** 🎉 _Want details? Keep reading below._
+**That's it!** 🎉
+
+**📖 New to MiniC?** [Learn the language →](LANGUAGE.md)
 
 ---
 
@@ -56,6 +58,8 @@ gcc build/mycode.s -o build/mycode
 - **Control Flow**: `if-else`, `while` loops
 - **I/O**: `print(expression);`
 - **Comments**: `//` single-line, `/* */` multi-line
+
+📖 **[Learn the language →](LANGUAGE.md)** - Complete language reference with examples
 
 ## Compiler Phases
 
@@ -120,8 +124,6 @@ python3 minic.py examples/arithmetic.mc --show-asm
 # See all compiler phases
 python3 minic.py examples/hello.mc --show-tokens --show-ast --show-ir --show-asm
 ```
-
-**📖 For detailed guide, see [USAGE.md](USAGE.md)**
 
 ## 💡 Example Programs
 
@@ -276,8 +278,8 @@ Source Code (.mc)
 
 ## 📖 Documentation
 
-- **[USAGE.md](USAGE.md)** - Detailed usage guide with examples
-- **[README.md](README.md)** - This file
+- **[LANGUAGE.md](LANGUAGE.md)** - Complete MiniC language reference and tutorial
+- **[README.md](README.md)** - This file (project overview and compiler usage)
 
 ## 📄 License
 
