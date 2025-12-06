@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiniC Compiler - Web Interface</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #f0f4f8 0%,
+          #e8eef5 50%,
+          #f5f7fa 100%
+        );
+        min-height: 100vh;
+        padding: 20px;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle,
+          rgba(59, 130, 246, 0.05) 1px,
+          transparent 1px
+        );
+        background-size: 50px 50px;
+        animation: grid-move 20s linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes grid-move {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(50px, 50px);
+        }
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.08),
+          0 0 0 1px rgba(59, 130, 246, 0.1);
+        overflow: hidden;
+        position: relative;
+      }
+
+      header {
+        background: linear-gradient(
+          135deg,
+          #3b82f6 0%,
+          #2563eb 50%,
+          #1d4ed8 100%
+        );
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          45deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.1) 50%,
+          transparent 70%
+        );
+        animation: shine 3s infinite;
+      }
+
+      @keyframes shine {
+        0%,
+        100% {
+          transform: translateX(-100%);
+        }
+        50% {
+          transform: translateX(100%);
+        }
+      }
+
+      header h1 {
+        font-size: 2.8em;
+        margin-bottom: 10px;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      header p {
+        font-size: 1.15em;
+        opacity: 0.95;
+        position: relative;
+        z-index: 1;
+        font-weight: 400;
+      }
+
+      .controls {
+        padding: 24px 30px;
+        background: linear-gradient(
+          to bottom,
+          rgba(249, 250, 251, 0.8),
+          rgba(243, 244, 246, 0.8)
+        );
+        border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 12px 28px;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 600;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      .btn:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+      }
+
+      .btn-primary:active {
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+        color: #374151;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .btn-secondary:hover {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      }
+
+      select {
+        padding: 12px 16px;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 10px;
+        font-size: 15px;
+        min-width: 220px;
+        background: rgba(255, 255, 255, 0.8);
+        color: #1f2937;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      select:hover {
+        border-color: rgba(59, 130, 246, 0.6);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      select option {
+        background: #ffffff;
+        color: #1f2937;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        min-height: 650px;
+      }
+
+      .editor-panel,
+      .output-panel {
+        padding: 28px;
+        background: rgba(249, 250, 251, 0.5);
+      }
+
+      .editor-panel {
+        border-right: 1px solid rgba(59, 130, 246, 0.15);
+      }
+
+      .panel-title {
+        font-size: 1.4em;
+        margin-bottom: 20px;
+        color: #1f2937;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      textarea {
+        width: 100%;
+        height: 520px;
+        padding: 20px;
+        font-family: "Fira Code", "Consolas", "Monaco", monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        border-radius: 12px;
+        resize: vertical;
+        background: rgba(255, 255, 255, 0.8);
+        color: #1f2937;
+        transition: all 0.3s;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      textarea::placeholder {
+        color: #9ca3af;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 18px;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.15);
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .tabs::-webkit-scrollbar {
+        height: 4px;
+      }
+
+      .tabs::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .tabs::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.3);
+        border-radius: 4px;
+      }
+
+      .tab {
+        padding: 12px 20px;
+        cursor: pointer;
+        border: none;
+        background: rgba(255, 255, 255, 0.3);
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        position: relative;
+      }
+
+      .tab:hover {
+        color: #374151;
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .tab.active {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.08);
+        border-bottom-color: #3b82f6;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #3b82f6, #2563eb);
+        border-radius: 2px 2px 0 0;
+      }
+
+      .output-content {
+        display: none;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+        min-height: 480px;
+        max-height: 480px;
+        overflow-y: auto;
+      }
+
+      .output-content::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .output-content::-webkit-scrollbar-track {
+        background: rgba(243, 244, 246, 0.5);
+        border-radius: 4px;
+      }
+
+      .output-content::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.4);
+        border-radius: 4px;
+      }
+
+      .output-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(59, 130, 246, 0.6);
+      }
+
+      .output-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .output-content pre {
+        margin: 0;
+        font-family: "Fira Code", "Consolas", "Monaco", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #374151;
+      }
+
+      .error {
+        color: #dc2626;
+        padding: 20px;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 12px;
+        font-family: "Fira Code", "Consolas", monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+      }
+
+      .success {
+        color: #059669;
+        padding: 16px 20px;
+        background: rgba(34, 197, 94, 0.08);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+      }
+
+      .success::before {
+        content: "✓";
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        background: rgba(34, 197, 94, 0.15);
+        border-radius: 50%;
+        font-size: 16px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 60px 40px;
+        color: #3b82f6;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .loading::after {
+        content: "...";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+
+      @keyframes dots {
+        0%,
+        20% {
+          content: ".";
+        }
+        40% {
+          content: "..";
+        }
+        60%,
+        100% {
+          content: "...";
+        }
+      }
+
+      @media (max-width: 968px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+
+        .editor-panel {
+          border-right: none;
+          border-bottom: 2px solid #e9ecef;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🚀 MiniC Compiler</h1>
+        <p>Interactive Compiler Demonstration - See All 6 Phases</p>
+      </header>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="compile()">▶ Compile</button>
+        <button class="btn btn-secondary" onclick="clearEditor()">
+          🗑️ Clear
+        </button>
+        <select id="examples" onchange="loadExample()">
+          <option value="">-- Load Example --</option>
+        </select>
+      </div>
+
+      <div class="main-content">
+        <div class="editor-panel">
+          <div class="panel-title">📝 MiniC Source Code</div>
+          <textarea
+            id="code"
+            placeholder="Write your MiniC code here...
+
+Example:
+int main() {
+    int x;
+    x = 42;
+    print(x);
+}"
+          ></textarea>
+        </div>
+
+        <div class="output-panel">
+          <div class="panel-title">📊 Compiler Output</div>
+
+          <div class="tabs">
+            <button class="tab active" onclick="showTab('tokens')">
+              Phase 1: Tokens
+            </button>
+            <button class="tab" onclick="showTab('ast')">Phase 2: AST</button>
+            <button class="tab" onclick="showTab('semantic')">
+              Phase 3: Semantic
+            </button>
+            <button class="tab" onclick="showTab('ir')">Phase 4: IR</button>
+            <button class="tab" onclick="showTab('optimized')">
+              Phase 5: Optimized
+            </button>
+            <button class="tab" onclick="showTab('assembly')">
+              Phase 6: Assembly
+            </button>
+          </div>
+
+          <div id="tokens" class="output-content active">
+            <pre>Click "Compile" to see lexer tokens...</pre>
+          </div>
+          <div id="ast" class="output-content">
+            <pre>Click "Compile" to see abstract syntax tree...</pre>
+          </div>
+          <div id="semantic" class="output-content">
+            <pre>Click "Compile" to see semantic analysis...</pre>
+          </div>
+          <div id="ir" class="output-content">
+            <pre>Click "Compile" to see intermediate representation...</pre>
+          </div>
+          <div id="optimized" class="output-content">
+            <pre>Click "Compile" to see optimized IR...</pre>
+          </div>
+          <div id="assembly" class="output-content">
+            <pre>Click "Compile" to see generated assembly...</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let examples = {};
+
+      // Load examples on page load
+      fetch("/examples")
+        .then((response) => response.json())
+        .then((data) => {
+          examples = data;
+          const select = document.getElementById("examples");
+          Object.keys(data)
+            .sort()
+            .forEach((name) => {
+              const option = document.createElement("option");
+              option.value = name;
+              option.textContent = name.replace(".mc", "");
+              select.appendChild(option);
+            });
+        });
+
+      function loadExample() {
+        const select = document.getElementById("examples");
+        const filename = select.value;
+        if (filename && examples[filename]) {
+          document.getElementById("code").value = examples[filename];
+        }
+      }
+
+      function clearEditor() {
+        document.getElementById("code").value = "";
+        document.getElementById("examples").value = "";
+      }
+
+      function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll(".output-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add("active");
+        event.target.classList.add("active");
+      }
+
+      function compile() {
+        const code = document.getElementById("code").value;
+
+        if (!code.trim()) {
+          alert("Please enter some code first!");
+          return;
+        }
+
+        // Show loading state
+        document.querySelectorAll(".output-content").forEach((content) => {
+          content.innerHTML = '<div class="loading">Compiling...</div>';
+        });
+
+        fetch("/compile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code: code }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              document.getElementById("tokens").innerHTML =
+                '<div class="success">✓ Phase 1: Lexical Analysis Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.tokens) +
+                "</pre>";
+
+              document.getElementById("ast").innerHTML =
+                '<div class="success">✓ Phase 2: Syntax Analysis Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.ast) +
+                "</pre>";
+
+              document.getElementById("semantic").innerHTML =
+                '<div class="success">✓ Phase 3: Semantic Analysis Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.semantic) +
+                "</pre>";
+
+              document.getElementById("ir").innerHTML =
+                '<div class="success">✓ Phase 4: IR Generation Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.ir) +
+                "</pre>";
+
+              document.getElementById("optimized").innerHTML =
+                '<div class="success">✓ Phase 5: Optimization Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.optimized_ir) +
+                "</pre>";
+
+              document.getElementById("assembly").innerHTML =
+                '<div class="success">✓ Phase 6: Assembly Generation Complete</div>' +
+                "<pre>" +
+                escapeHtml(data.assembly) +
+                "</pre>";
+            } else {
+              const errorMsg =
+                '<div class="error">❌ Compilation Error:<br><br>' +
+                escapeHtml(data.error) +
+                "</div>";
+              document
+                .querySelectorAll(".output-content")
+                .forEach((content) => {
+                  content.innerHTML = errorMsg;
+                });
+            }
+          })
+          .catch((error) => {
+            const errorMsg =
+              '<div class="error">❌ Network Error:<br><br>' +
+              escapeHtml(error.toString()) +
+              "</div>";
+            document.querySelectorAll(".output-content").forEach((content) => {
+              content.innerHTML = errorMsg;
+            });
+          });
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Allow Ctrl+Enter to compile
+      document.getElementById("code").addEventListener("keydown", function (e) {
+        if (e.ctrlKey && e.key === "Enter") {
+          compile();
+        }
+      });
+    </script>
+  </body>
+</html>
