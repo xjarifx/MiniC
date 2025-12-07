@@ -26,12 +26,12 @@ MiniC is a simple, C-like programming language designed for learning compiler co
 ### Your First Program
 
 ```c
-int main() {
-    print(42);
-}
+int x;
+x = 42;
+print(x);
 ```
 
-Every MiniC program must have a `main()` function that returns `int`. This is where your program starts executing.
+MiniC programs are simply a sequence of statements. No function declarations needed - just write your code!
 
 ---
 
@@ -40,32 +40,35 @@ Every MiniC program must have a `main()` function that returns `int`. This is wh
 ### Program Structure
 
 ```c
-int main() {
-    // Your code here
-}
+// Declare variables
+int x;
+int y;
+
+// Use them
+x = 10;
+y = 20;
+print(x + y);
 ```
 
-- Every program starts with `int main()`
-- Code blocks are wrapped in `{ }` braces
+- Programs are sequences of statements
 - Statements end with semicolons `;`
-- Case-sensitive: `main` is different from `Main`
+- Case-sensitive: `count` is different from `Count`
+- No function declarations (not even main)
 
 ### Whitespace
 
 MiniC ignores extra whitespace (spaces, tabs, newlines), so you can format your code for readability:
 
 ```c
-int main() {
-    int x;
-    x = 10;
-    print(x);
-}
+int x;
+x = 10;
+print(x);
 ```
 
 is the same as:
 
 ```c
-int main(){int x;x=10;print(x);}
+int x;x=10;print(x);
 ```
 
 ---
@@ -158,7 +161,7 @@ int while;         // ✗ Invalid (reserved keyword)
 **Reserved Keywords:**
 
 ```
-int, bool, true, false, if, else, while, main
+int, bool, true, false, if, else, while, print
 ```
 
 ---
@@ -178,7 +181,7 @@ For `int` types only:
 | `%`      | Modulo         | `10 % 3` | `1`    |
 
 ```c
-int main() {
+
     int a;
     int b;
     int result;
@@ -197,7 +200,7 @@ int main() {
 
     result = a % b;    // 1 (remainder)
     print(result);
-}
+
 ```
 
 **Important**: Division is integer division (truncates decimal part).
@@ -216,7 +219,7 @@ Compare values and return `bool`:
 | `!=`     | Not equal to     | `5 != 3` | `true`  |
 
 ```c
-int main() {
+
     int x;
     bool result;
 
@@ -230,7 +233,7 @@ int main() {
 
     result = x < 5;     // false
     print(result);      // Prints: 0
-}
+
 ```
 
 ### Logical Operators
@@ -244,7 +247,7 @@ For `bool` types:
 | `!`      | NOT       | `!true`           | `false` |
 
 ```c
-int main() {
+
     bool a;
     bool b;
     bool result;
@@ -260,7 +263,7 @@ int main() {
 
     result = !a;        // false (opposite of true)
     print(result);      // Prints: 0
-}
+
 ```
 
 ### Operator Precedence
@@ -298,13 +301,13 @@ if (condition) {
     // Code when condition is true
 } else {
     // Code when condition is false
-}
+
 ```
 
 **Examples:**
 
 ```c
-int main() {
+
     int x;
     x = 10;
 
@@ -313,11 +316,11 @@ int main() {
     } else {
         print(0);
     }
-}
+
 ```
 
 ```c
-int main() {
+
     int age;
     age = 15;
 
@@ -326,13 +329,13 @@ int main() {
     } else {
         print(0);    // Minor (this executes)
     }
-}
+
 ```
 
 **If without Else:**
 
 ```c
-int main() {
+
     int x;
     x = 7;
 
@@ -340,13 +343,13 @@ int main() {
         print(x);    // Prints: 7
     }
     // No else branch needed
-}
+
 ```
 
 **Nested If:**
 
 ```c
-int main() {
+
     int x;
     x = 15;
 
@@ -355,7 +358,7 @@ int main() {
             print(1);    // x is between 10 and 20
         }
     }
-}
+
 ```
 
 ### While Loops
@@ -367,14 +370,14 @@ Repeat code while a condition is true:
 ```c
 while (condition) {
     // Code to repeat
-}
+
 ```
 
 **Examples:**
 
 ```c
 // Countdown from 5 to 1
-int main() {
+
     int count;
     count = 5;
 
@@ -382,13 +385,13 @@ int main() {
         print(count);
         count = count - 1;
     }
-}
+
 // Output: 5 4 3 2 1
 ```
 
 ```c
 // Sum of numbers 1 to 10
-int main() {
+
     int i;
     int sum;
 
@@ -401,17 +404,17 @@ int main() {
     }
 
     print(sum);    // Prints: 55
-}
+
 ```
 
 **Infinite Loop** (careful!):
 
 ```c
-int main() {
+
     while (true) {
         print(1);    // This will run forever!
     }
-}
+
 ```
 
 ---
@@ -437,7 +440,7 @@ print(expression);
 **Examples:**
 
 ```c
-int main() {
+
     int x;
     x = 42;
 
@@ -445,11 +448,11 @@ int main() {
     print(100);        // Prints: 100
     print(x + 10);     // Prints: 52
     print(x * 2);      // Prints: 84
-}
+
 ```
 
 ```c
-int main() {
+
     bool flag;
     flag = true;
 
@@ -457,7 +460,7 @@ int main() {
 
     flag = false;
     print(flag);       // Prints: 0 (false)
-}
+
 ```
 
 **Note**: Each `print()` outputs a number followed by a newline.
@@ -473,12 +476,12 @@ Comments are ignored by the compiler and help document your code.
 Use `//` for single-line comments:
 
 ```c
-int main() {
+
     // This is a comment
     int x;        // Comments can be at end of line
     x = 42;       // Assign 42 to x
     print(x);
-}
+
 ```
 
 ### Multi-Line Comments
@@ -486,7 +489,7 @@ int main() {
 Use `/* */` for multi-line comments:
 
 ```c
-int main() {
+
     /*
      * This is a multi-line comment.
      * It can span multiple lines.
@@ -496,7 +499,7 @@ int main() {
     x = 10;
 
     /* You can also use it inline */ print(x);
-}
+
 ```
 
 ---
@@ -506,7 +509,7 @@ int main() {
 ### Example 1: Simple Calculator
 
 ```c
-int main() {
+
     int a;
     int b;
     int sum;
@@ -520,13 +523,13 @@ int main() {
 
     print(sum);        // Prints: 22
     print(product);    // Prints: 105
-}
+
 ```
 
 ### Example 2: Even or Odd
 
 ```c
-int main() {
+
     int num;
     int remainder;
 
@@ -538,13 +541,13 @@ int main() {
     } else {
         print(1);      // Odd (prints this)
     }
-}
+
 ```
 
 ### Example 3: Factorial
 
 ```c
-int main() {
+
     int n;
     int factorial;
     int i;
@@ -559,13 +562,13 @@ int main() {
     }
 
     print(factorial);  // Prints: 120 (5! = 5*4*3*2*1)
-}
+
 ```
 
 ### Example 4: Fibonacci Sequence
 
 ```c
-int main() {
+
     int n;
     int a;
     int b;
@@ -584,14 +587,14 @@ int main() {
         b = temp;
         count = count + 1;
     }
-}
+
 // Output: 0 1 1 2 3 5 8 13 21 34
 ```
 
 ### Example 5: Prime Number Checker
 
 ```c
-int main() {
+
     int num;
     int i;
     int isPrime;
@@ -608,13 +611,13 @@ int main() {
     }
 
     print(isPrime);  // Prints: 1 (17 is prime)
-}
+
 ```
 
 ### Example 6: Maximum of Two Numbers
 
 ```c
-int main() {
+
     int a;
     int b;
     int max;
@@ -629,13 +632,13 @@ int main() {
     }
 
     print(max);      // Prints: 42
-}
+
 ```
 
 ### Example 7: Sum of Digits
 
 ```c
-int main() {
+
     int num;
     int digit;
     int sum;
@@ -650,13 +653,13 @@ int main() {
     }
 
     print(sum);      // Prints: 10 (1+2+3+4)
-}
+
 ```
 
 ### Example 8: Power Function
 
 ```c
-int main() {
+
     int base;
     int exponent;
     int result;
@@ -673,7 +676,7 @@ int main() {
     }
 
     print(result);   // Prints: 256 (2^8)
-}
+
 ```
 
 ---
@@ -682,16 +685,16 @@ int main() {
 
 Understanding what MiniC **cannot** do:
 
-### ❌ No Functions (except main)
+### ❌ No Functions
 
 ```c
 // ✗ This doesn't work
 int add(int a, int b) {
     return a + b;
-}
+
 ```
 
-Only the `main()` function is allowed.
+MiniC doesn't support functions - all code is sequential statements.
 
 ### ❌ No Arrays
 
@@ -746,7 +749,7 @@ while (true) {
     if (x > 10) {
         break;
     }
-}
+
 ```
 
 Use conditional logic instead.
@@ -757,7 +760,7 @@ Use conditional logic instead.
 // ✗ This doesn't work
 for (i = 0; i < 10; i = i + 1) {
     print(i);
-}
+
 ```
 
 Use `while` loops instead:
@@ -769,7 +772,7 @@ i = 0;
 while (i < 10) {
     print(i);
     i = i + 1;
-}
+
 ```
 
 ### ❌ No Switch Statements
@@ -779,7 +782,7 @@ while (i < 10) {
 switch (x) {
     case 1: print(1); break;
     case 2: print(2); break;
-}
+
 ```
 
 Use if-else chains instead:
@@ -792,7 +795,7 @@ if (x == 1) {
     if (x == 2) {
         print(2);
     }
-}
+
 ```
 
 ---
@@ -802,7 +805,7 @@ if (x == 1) {
 ### Keywords
 
 ```
-int, bool, true, false, if, else, while, main, print
+int, bool, true, false, if, else, while, print
 ```
 
 ### Data Types
@@ -873,7 +876,7 @@ print(expression);
 - Try to use variables before declaring them
 - Mix types (assign `bool` to `int` or vice versa)
 - Create infinite loops without planning
-- Forget the `main()` function
+- Use undefined variables
 
 ---
 
