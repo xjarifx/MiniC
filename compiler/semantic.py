@@ -356,18 +356,20 @@ class SemanticTreePrinter(ASTVisitor):
     
     def print_analysis(self, ast: Program) -> str:
         """Perform analysis and return tree representation"""
-        self.output = ["Semantic Analysis"]
-        self.output.append("|-- Symbol Table (Global Scope)")
+        self.output = ["<Semantic Analysis>"]
+        self.output.append("|")
+        self.output.append("|-- [Global Scope]")
         ast.accept(self)
         
         # Print final symbol table
         if self.symbol_table.symbols:
-            self.output.append("+-- Final Symbol Table:")
+            self.output.append("|")
+            self.output.append("+-- [Symbol Table Summary]")
             symbols = list(self.symbol_table.symbols.items())
             for i, (name, var_type) in enumerate(symbols):
                 is_last = (i == len(symbols) - 1)
                 connector = "+-- " if is_last else "|-- "
-                self.output.append(f"    {connector}{name}: {var_type}")
+                self.output.append(f"    {connector}'{name}' : {var_type}")
         
         return "\n".join(self.output)
     
@@ -393,48 +395,45 @@ class SemanticTreePrinter(ASTVisitor):
     def visit_var_declaration(self, node: VarDeclaration):
         """Visit variable declaration node"""
         self.current_scope.declare(node.name, node.var_type, node.line, node.column)
-        self._add_line(f"VarDecl: {node.var_type} {node.name} [OK]")
+        self._add_line(f"<VarDecl> {node.var_type} '{node.name}' [OK]")
     
     def visit_assignment(self, node: Assignment):
         """Visit assignment node"""
         var_type = self.current_scope.lookup(node.name)
         if var_type is None:
-            self._add_line(f"Assignment: {node.name} = ??? [ERROR: Undeclared]")
+            self._add_line(f"<Assignment> '{node.name}' = ??? [ERROR: Undeclared variable]")
             raise SemanticError(f"Undeclared variable '{node.name}'", node.line, node.column)
         
         expr_type = node.expression.accept(self)
         
         if var_type != expr_type:
-            self._add_line(f"Assignment: {node.name} = ??? [ERROR: Type mismatch {expr_type} → {var_type}]")
+            self._add_line(f"<Assignment> '{node.name}' = <{expr_type}> [ERROR: Type mismatch, expected {var_type}]")
             raise SemanticError(f"Type mismatch", node.line, node.column)
         
-        self._add_line(f"Assignment: {node.name} = <{expr_type}> [OK]")
+        self._add_line(f"<Assignment> '{node.name}' = <{expr_type}> [OK]")
     
     def visit_if_statement(self, node: IfStatement):
         """Visit if statement node"""
         cond_type = node.condition.accept(self)
         
         if cond_type != 'bool':
-            self._add_line(f"If [ERROR: Condition must be bool, got {cond_type}]")
+            self._add_line(f"<If> [ERROR: Condition must be bool, got {cond_type}]")
             raise SemanticError(f"If condition must be bool", node.line, node.column)
-        
-        self._add_line(f"If: <{cond_type}> [OK]")
         
         # Then block - enter new scope
         self.scope_counter += 1
         scope_id = self.scope_counter
-        self.indent_stack.append("|   " if node.else_block else "    ")
-        self._add_line(f"Then (Scope {scope_id}):")
-        self.indent_stack.pop()
         
         self.current_scope = self.current_scope.enter_scope()
-        self.indent_stack.append("|   " if node.else_block else "    ")
-        self.indent_stack.append("|   ")
         
+        # Add if node with then block as child
+        self._add_line(f"<If> condition: <{cond_type}> [OK]", is_last=not node.else_block)
+        self.indent_stack.append("    " if not node.else_block else "|   ")
+        self._add_line(f"<ThenBlock> (Scope #{scope_id})")
+        
+        self.indent_stack.append("    ")
         for i, statement in enumerate(node.then_block):
             is_last = (i == len(node.then_block) - 1)
-            if is_last:
-                self.indent_stack[-1] = "    "
             statement.accept(self)
         
         self.indent_stack.pop()
@@ -445,18 +444,14 @@ class SemanticTreePrinter(ASTVisitor):
         if node.else_block:
             self.scope_counter += 1
             scope_id = self.scope_counter
-            self.indent_stack.append("    ")
-            self._add_line(f"Else (Scope {scope_id}):", is_last=True)
-            self.indent_stack.pop()
             
             self.current_scope = self.current_scope.enter_scope()
             self.indent_stack.append("    ")
-            self.indent_stack.append("|   ")
+            self._add_line(f"<ElseBlock> (Scope #{scope_id})", is_last=True)
             
+            self.indent_stack.append("    ")
             for i, statement in enumerate(node.else_block):
                 is_last = (i == len(node.else_block) - 1)
-                if is_last:
-                    self.indent_stack[-1] = "    "
                 statement.accept(self)
             
             self.indent_stack.pop()
@@ -468,26 +463,23 @@ class SemanticTreePrinter(ASTVisitor):
         cond_type = node.condition.accept(self)
         
         if cond_type != 'bool':
-            self._add_line(f"While [ERROR: Condition must be bool, got {cond_type}]")
+            self._add_line(f"<While> [ERROR: Condition must be bool, got {cond_type}]")
             raise SemanticError(f"While condition must be bool", node.line, node.column)
-        
-        self._add_line(f"While: <{cond_type}> [OK]")
         
         # Enter new scope for loop body
         self.scope_counter += 1
         scope_id = self.scope_counter
-        self.indent_stack.append("    ")
-        self._add_line(f"Body (Scope {scope_id}):")
-        self.indent_stack.pop()
         
         self.current_scope = self.current_scope.enter_scope()
-        self.indent_stack.append("    ")
-        self.indent_stack.append("|   ")
         
+        # Add while node with body as child
+        self._add_line(f"<While> condition: <{cond_type}> [OK]")
+        self.indent_stack.append("    ")
+        self._add_line(f"<LoopBody> (Scope #{scope_id})")
+        
+        self.indent_stack.append("    ")
         for i, statement in enumerate(node.body):
             is_last = (i == len(node.body) - 1)
-            if is_last:
-                self.indent_stack[-1] = "    "
             statement.accept(self)
         
         self.indent_stack.pop()
@@ -497,25 +489,22 @@ class SemanticTreePrinter(ASTVisitor):
     def visit_print_statement(self, node: PrintStatement):
         """Visit print statement node"""
         expr_type = node.expression.accept(self)
-        self._add_line(f"Print: <{expr_type}> [OK]")
+        self._add_line(f"<Print> expression: <{expr_type}> [OK]")
     
     def visit_block(self, node: Block):
         """Visit block node"""
         self.scope_counter += 1
         scope_id = self.scope_counter
-        self._add_line(f"Block (Scope {scope_id}):")
         
         self.current_scope = self.current_scope.enter_scope()
+        
+        self._add_line(f"<Block> (Scope #{scope_id})")
         self.indent_stack.append("    ")
-        self.indent_stack.append("|   ")
         
         for i, statement in enumerate(node.statements):
             is_last = (i == len(node.statements) - 1)
-            if is_last:
-                self.indent_stack[-1] = "    "
             statement.accept(self)
         
-        self.indent_stack.pop()
         self.indent_stack.pop()
         self.current_scope = self.current_scope.exit_scope()
     

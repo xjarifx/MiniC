@@ -3,13 +3,13 @@
 MiniC Compiler - Main Entry Point
 
 A complete compiler for the MiniC programming language demonstrating
-all six classical compiler phases. Generates x86-64 assembly code.
+all six classical compiler phases. Generates readable pseudocode assembly.
 
 Usage:
-    python minic.py <input_file.mc> [-o <output_file.s>] [options]
+    python minic.py <input_file.mc> [-o <output_file.asm>] [options]
 
 Options:
-    -o, --output FILE       Output assembly file (default: output.s)
+    -o, --output FILE       Output assembly file (default: output.asm)
     --show-tokens          Display lexer tokens
     --show-ast             Display Abstract Syntax Tree
     --show-ir              Display Three-Address Code (IR)
@@ -208,8 +208,8 @@ For more information, see README.md
     )
     
     parser.add_argument('input', help='Input MiniC source file (.mc)')
-    parser.add_argument('-o', '--output', default='output.s',
-                       help='Output assembly file (default: output.s)')
+    parser.add_argument('-o', '--output', default='output.asm',
+                       help='Output assembly file (default: output.asm)')
     parser.add_argument('--show-tokens', action='store_true',
                        help='Display lexer tokens')
     parser.add_argument('--show-ast', action='store_true',
@@ -234,9 +234,9 @@ For more information, see README.md
     build_dir.mkdir(exist_ok=True)
     
     # If output is default, put it in build folder with input filename
-    if args.output == 'output.s':
+    if args.output == 'output.asm':
         base_name = input_path.stem  # filename without extension
-        args.output = str(build_dir / f"{base_name}.s")
+        args.output = str(build_dir / f"{base_name}.asm")
     
     # Read source code
     try:
@@ -276,10 +276,9 @@ For more information, see README.md
         binary_name = output_path.stem
         binary_path = build_dir / binary_name
         
-        print(f"\n[OK] Generated assembly code written to: {args.output}")
-        print(f"\nTo assemble and run:")
-        print(f"  gcc {args.output} -o {binary_path}")
-        print(f"  ./{binary_path}")
+        print(f"\n[OK] Generated pseudocode assembly written to: {args.output}")
+        print(f"\nNote: This is readable pseudocode assembly for educational purposes.")
+        print(f"      To generate executable code, a real code generator would be needed.")
         
         return 0
         

@@ -271,14 +271,14 @@ class ASTVisitor(ABC):
 # ============================================================================
 
 class ASTPrinter(ASTVisitor):
-    """Prints AST in traditional syntax tree format with terminals as leaves"""
+    """Prints AST in tree format with box-drawing characters"""
     
     def __init__(self):
         self.indent_level = 0
         self.prefixes = []
     
     def _format_tree(self, node_label: str, children: list) -> list:
-        """Format a node with its children"""
+        """Format a node with its children using ASCII tree characters"""
         lines = [node_label]
         
         for i, child in enumerate(children):

@@ -82,20 +82,12 @@ def compile_code(source_code):
         result['ast'] = print_ast(ast)
         
         # Phase 3: Semantic Analysis
-        from compiler.semantic import SemanticAnalyzer
-        analyzer = SemanticAnalyzer()
-        analyzer.analyze(ast)
+        from compiler.semantic import print_semantic_analysis
+        analyze(ast)  # This validates the code
         
-        # Get symbol table from analyzer
-        symbol_info = []
-        for name, var_type in analyzer.symbol_table.symbols.items():
-            symbol_info.append(f"  {name}: {var_type}")
-        
-        result['semantic'] = "✓ Semantic Analysis Passed\n\n"
-        if symbol_info:
-            result['semantic'] += "Symbol Table:\n" + "\n".join(symbol_info)
-        else:
-            result['semantic'] += "No variables declared."
+        # Get tree format output
+        result['semantic'] = "✓ Phase 3: Semantic Analysis Complete\n\n"
+        result['semantic'] += print_semantic_analysis(ast)
         
         # Phase 4: IR Generation
         ir_instructions = generate_ir(ast)
