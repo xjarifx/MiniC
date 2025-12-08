@@ -37,7 +37,45 @@ def compile_code(source_code):
     try:
         # Phase 1: Lexical Analysis
         tokens = lex(source_code)
-        result['tokens'] = '\n'.join(str(t) for t in tokens)
+        
+        # Group tokens by type
+        from collections import defaultdict
+        token_groups = defaultdict(list)
+        for idx, token in enumerate(tokens, 1):
+            token_groups[token.type.name].append((idx, token))
+        
+        # Format tokens in separate tables by type
+        token_output = []
+        
+        # Define category order for better organization
+        token_categories = {
+            'Keywords': ['INT', 'BOOL', 'IF', 'ELSE', 'WHILE', 'PRINT', 'TRUE', 'FALSE'],
+            'Identifiers & Literals': ['IDENTIFIER', 'NUMBER'],
+            'Operators': ['PLUS', 'MINUS', 'MULTIPLY', 'DIVIDE', 'MODULO', 'ASSIGN'],
+            'Comparison Operators': ['LESS_THAN', 'GREATER_THAN', 'LESS_EQUAL', 'GREATER_EQUAL', 'EQUAL', 'NOT_EQUAL'],
+            'Logical Operators': ['AND', 'OR', 'NOT'],
+            'Delimiters': ['SEMICOLON', 'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE'],
+            'Other': ['EOF']
+        }
+        
+        for category, token_types in token_categories.items():
+            category_tokens = []
+            for token_type in token_types:
+                if token_type in token_groups:
+                    category_tokens.extend(token_groups[token_type])
+            
+            if category_tokens:
+                token_output.append(f"\n{category}:")
+                token_output.append("=" * 80)
+                token_output.append(f"{'No.':<6} {'Type':<20} {'Value':<20} {'Line':<8} {'Column':<8}")
+                token_output.append("-" * 80)
+                
+                for idx, token in category_tokens:
+                    token_type = token.type.name
+                    token_value = token.value if len(token.value) <= 18 else token.value[:15] + "..."
+                    token_output.append(f"{idx:<6} {token_type:<20} {token_value:<20} {token.line:<8} {token.column:<8}")
+        
+        result['tokens'] = '\n'.join(token_output)
         
         # Phase 2: Syntax Analysis
         ast = parse(tokens)
