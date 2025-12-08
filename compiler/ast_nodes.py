@@ -271,106 +271,130 @@ class ASTVisitor(ABC):
 # ============================================================================
 
 class ASTPrinter(ASTVisitor):
-    """Prints AST in a human-readable tree format"""
+    """Prints AST in traditional syntax tree format with terminals as leaves"""
     
     def __init__(self):
         self.indent_level = 0
+        self.prefixes = []
     
-    def _indent(self):
-        return "  " * self.indent_level
+    def _format_tree(self, node_label: str, children: list) -> list:
+        """Format a node with its children"""
+        lines = [node_label]
+        
+        for i, child in enumerate(children):
+            is_last = (i == len(children) - 1)
+            connector = "+-- " if is_last else "|-- "
+            extension = "    " if is_last else "|   "
+            
+            if isinstance(child, str):
+                # Simple string child (terminal)
+                lines.append(connector + child)
+            elif isinstance(child, list):
+                # List of lines from child node
+                lines.append(connector + child[0])
+                for subline in child[1:]:
+                    lines.append(extension + subline)
+        
+        return lines
     
     def visit_program(self, node: Program):
-        result = [f"{self._indent()}Program:"]
-        self.indent_level += 1
-        for stmt in node.statements:
-            result.append(stmt.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Program node (root) with statement children"""
+        children = [stmt.accept(self) for stmt in node.statements]
+        lines = self._format_tree("<Program>", children)
+        return "\n".join(lines)
     
     def visit_var_declaration(self, node: VarDeclaration):
-        return f"{self._indent()}VarDecl: {node.var_type} {node.name}"
+        """Variable declaration node with type and identifier as leaves"""
+        return self._format_tree(
+            "<VarDeclaration>",
+            [
+                f"<Type>: {node.var_type}",
+                f"<Identifier>: {node.name}"
+            ]
+        )
     
     def visit_assignment(self, node: Assignment):
-        result = [f"{self._indent()}Assignment: {node.name} ="]
-        self.indent_level += 1
-        result.append(node.expression.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Assignment statement with identifier and expression"""
+        expr_tree = node.expression.accept(self)
+        return self._format_tree(
+            "<Assignment>",
+            [
+                f"<Identifier>: {node.name}",
+                f"<Operator>: =",
+                expr_tree
+            ]
+        )
     
     def visit_if_statement(self, node: IfStatement):
-        result = [f"{self._indent()}If:"]
-        self.indent_level += 1
-        result.append(f"{self._indent()}Condition:")
-        self.indent_level += 1
-        result.append(node.condition.accept(self))
-        self.indent_level -= 1
-        result.append(f"{self._indent()}Then:")
-        self.indent_level += 1
-        for stmt in node.then_block:
-            result.append(stmt.accept(self))
-        self.indent_level -= 1
+        """If statement with condition, then block, and optional else block"""
+        cond_tree = node.condition.accept(self)
+        then_stmts = [stmt.accept(self) for stmt in node.then_block]
+        then_tree = self._format_tree("<ThenBlock>", then_stmts)
+        
+        children = [cond_tree, then_tree]
+        
         if node.else_block:
-            result.append(f"{self._indent()}Else:")
-            self.indent_level += 1
-            for stmt in node.else_block:
-                result.append(stmt.accept(self))
-            self.indent_level -= 1
-        self.indent_level -= 1
-        return "\n".join(result)
+            else_stmts = [stmt.accept(self) for stmt in node.else_block]
+            else_tree = self._format_tree("<ElseBlock>", else_stmts)
+            children.append(else_tree)
+        
+        return self._format_tree("<IfStatement>", children)
     
     def visit_while_statement(self, node: WhileStatement):
-        result = [f"{self._indent()}While:"]
-        self.indent_level += 1
-        result.append(f"{self._indent()}Condition:")
-        self.indent_level += 1
-        result.append(node.condition.accept(self))
-        self.indent_level -= 1
-        result.append(f"{self._indent()}Body:")
-        self.indent_level += 1
-        for stmt in node.body:
-            result.append(stmt.accept(self))
-        self.indent_level -= 1
-        self.indent_level -= 1
-        return "\n".join(result)
+        """While statement with condition and body"""
+        cond_tree = node.condition.accept(self)
+        body_stmts = [stmt.accept(self) for stmt in node.body]
+        body_tree = self._format_tree("<Body>", body_stmts)
+        
+        return self._format_tree("<WhileStatement>", [cond_tree, body_tree])
     
     def visit_print_statement(self, node: PrintStatement):
-        result = [f"{self._indent()}Print:"]
-        self.indent_level += 1
-        result.append(node.expression.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Print statement with expression"""
+        expr_tree = node.expression.accept(self)
+        return self._format_tree("<PrintStatement>", [expr_tree])
     
     def visit_block(self, node: Block):
-        result = [f"{self._indent()}Block:"]
-        self.indent_level += 1
-        for stmt in node.statements:
-            result.append(stmt.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Block statement containing multiple statements"""
+        stmt_trees = [stmt.accept(self) for stmt in node.statements]
+        return self._format_tree("<Block>", stmt_trees)
     
     def visit_binary_op(self, node: BinaryOp):
-        result = [f"{self._indent()}BinaryOp: {node.operator}"]
-        self.indent_level += 1
-        result.append(node.left.accept(self))
-        result.append(node.right.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Binary operation with operator and two operands"""
+        left_tree = node.left.accept(self)
+        right_tree = node.right.accept(self)
+        
+        return self._format_tree(
+            "<BinaryExpression>",
+            [
+                left_tree,
+                f"<Operator>: {node.operator}",
+                right_tree
+            ]
+        )
     
     def visit_unary_op(self, node: UnaryOp):
-        result = [f"{self._indent()}UnaryOp: {node.operator}"]
-        self.indent_level += 1
-        result.append(node.operand.accept(self))
-        self.indent_level -= 1
-        return "\n".join(result)
+        """Unary operation with operator and operand"""
+        operand_tree = node.operand.accept(self)
+        
+        return self._format_tree(
+            "<UnaryExpression>",
+            [
+                f"<Operator>: {node.operator}",
+                operand_tree
+            ]
+        )
     
     def visit_identifier(self, node: Identifier):
-        return f"{self._indent()}Identifier: {node.name}"
+        """Identifier leaf node (terminal)"""
+        return [f"<Identifier>: {node.name}"]
     
     def visit_int_literal(self, node: IntLiteral):
-        return f"{self._indent()}IntLiteral: {node.value}"
+        """Integer literal leaf node (terminal)"""
+        return [f"<IntLiteral>: {node.value}"]
     
     def visit_bool_literal(self, node: BoolLiteral):
-        return f"{self._indent()}BoolLiteral: {node.value}"
+        """Boolean literal leaf node (terminal)"""
+        return [f"<BoolLiteral>: {node.value}"]
 
 
 def print_ast(ast: ASTNode) -> str:

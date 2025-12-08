@@ -145,18 +145,26 @@ class IRGenerator(ASTVisitor):
         self.instructions.append(TACVarDecl(node.var_type, node.name))
     
     def visit_assignment(self, node: Assignment) -> Optional[str]:
-        """Visit assignment node"""
+        """Visit assignment node - INEFFICIENT VERSION"""
         # Generate code for expression
         expr_result = node.expression.accept(self)
         
-        # Generate assignment
-        self.instructions.append(TACAssign(node.name, expr_result))
+        # INEFFICIENCY 1: Create unnecessary temporary
+        temp = self.new_temp()
+        self.instructions.append(TACAssign(temp, expr_result))
+        
+        # INEFFICIENCY 2: Create another unnecessary temporary
+        temp2 = self.new_temp()
+        self.instructions.append(TACAssign(temp2, temp))
+        
+        # Generate assignment from second temp
+        self.instructions.append(TACAssign(node.name, temp2))
         
         return None
     
     def visit_if_statement(self, node: IfStatement) -> Optional[str]:
         """
-        Visit if statement node.
+        Visit if statement node - INEFFICIENT VERSION
         
         Generated code:
             [condition code]
@@ -170,12 +178,19 @@ class IRGenerator(ASTVisitor):
         # Generate code for condition
         cond_result = node.condition.accept(self)
         
+        # INEFFICIENCY 1: Create unnecessary temps for condition
+        temp1 = self.new_temp()
+        self.instructions.append(TACAssign(temp1, cond_result))
+        
+        temp2 = self.new_temp()
+        self.instructions.append(TACAssign(temp2, temp1))
+        
         # Create labels
         else_label = self.new_label()
         end_label = self.new_label()
         
         # If condition is false, jump to else
-        self.instructions.append(TACIfFalse(cond_result, else_label))
+        self.instructions.append(TACIfFalse(temp2, else_label))
         
         # Then block
         for statement in node.then_block:
@@ -199,7 +214,7 @@ class IRGenerator(ASTVisitor):
     
     def visit_while_statement(self, node: WhileStatement) -> Optional[str]:
         """
-        Visit while statement node.
+        Visit while statement node - INEFFICIENT VERSION
         
         Generated code:
             start_label:
@@ -219,8 +234,15 @@ class IRGenerator(ASTVisitor):
         # Generate code for condition
         cond_result = node.condition.accept(self)
         
+        # INEFFICIENCY: Create unnecessary temps for condition
+        temp1 = self.new_temp()
+        self.instructions.append(TACAssign(temp1, cond_result))
+        
+        temp2 = self.new_temp()
+        self.instructions.append(TACAssign(temp2, temp1))
+        
         # If condition is false, exit loop
-        self.instructions.append(TACIfFalse(cond_result, end_label))
+        self.instructions.append(TACIfFalse(temp2, end_label))
         
         # Loop body
         for statement in node.body:
@@ -235,12 +257,19 @@ class IRGenerator(ASTVisitor):
         return None
     
     def visit_print_statement(self, node: PrintStatement) -> Optional[str]:
-        """Visit print statement node"""
+        """Visit print statement node - INEFFICIENT VERSION"""
         # Generate code for expression
         expr_result = node.expression.accept(self)
         
+        # INEFFICIENCY: Create unnecessary temps before printing
+        temp1 = self.new_temp()
+        self.instructions.append(TACAssign(temp1, expr_result))
+        
+        temp2 = self.new_temp()
+        self.instructions.append(TACAssign(temp2, temp1))
+        
         # Generate print instruction
-        self.instructions.append(TACPrint(expr_result))
+        self.instructions.append(TACPrint(temp2))
         
         return None
     
@@ -253,6 +282,7 @@ class IRGenerator(ASTVisitor):
     def visit_binary_op(self, node: BinaryOp) -> str:
         """
         Visit binary operation node and return temp holding result.
+        INEFFICIENT VERSION - Creates unnecessary temporaries
         
         Returns:
             Name of temporary variable holding result
@@ -261,17 +291,29 @@ class IRGenerator(ASTVisitor):
         left_result = node.left.accept(self)
         right_result = node.right.accept(self)
         
+        # INEFFICIENCY 1: Create unnecessary temps to copy operands
+        left_temp = self.new_temp()
+        self.instructions.append(TACAssign(left_temp, left_result))
+        
+        right_temp = self.new_temp()
+        self.instructions.append(TACAssign(right_temp, right_result))
+        
         # Create temporary for result
         result_temp = self.new_temp()
         
-        # Generate binary operation
-        self.instructions.append(TACBinaryOp(result_temp, left_result, node.operator, right_result))
+        # Generate binary operation using the copied temps
+        self.instructions.append(TACBinaryOp(result_temp, left_temp, node.operator, right_temp))
         
-        return result_temp
+        # INEFFICIENCY 2: Copy result to another temp
+        final_temp = self.new_temp()
+        self.instructions.append(TACAssign(final_temp, result_temp))
+        
+        return final_temp
     
     def visit_unary_op(self, node: UnaryOp) -> str:
         """
         Visit unary operation node and return temp holding result.
+        INEFFICIENT VERSION - Creates unnecessary temporaries
         
         Returns:
             Name of temporary variable holding result
@@ -279,13 +321,21 @@ class IRGenerator(ASTVisitor):
         # Generate code for operand
         operand_result = node.operand.accept(self)
         
+        # INEFFICIENCY 1: Create unnecessary temp to copy operand
+        operand_temp = self.new_temp()
+        self.instructions.append(TACAssign(operand_temp, operand_result))
+        
         # Create temporary for result
         result_temp = self.new_temp()
         
-        # Generate unary operation
-        self.instructions.append(TACUnaryOp(result_temp, node.operator, operand_result))
+        # Generate unary operation using the copied temp
+        self.instructions.append(TACUnaryOp(result_temp, node.operator, operand_temp))
         
-        return result_temp
+        # INEFFICIENCY 2: Copy result to another temp
+        final_temp = self.new_temp()
+        self.instructions.append(TACAssign(final_temp, result_temp))
+        
+        return final_temp
     
     def visit_identifier(self, node: Identifier) -> str:
         """

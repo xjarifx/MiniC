@@ -21,7 +21,7 @@ class Optimizer:
     
     def optimize(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
         """
-        Apply all optimization passes.
+        Apply all optimization passes - EFFICIENT VERSION
         
         Args:
             instructions: Original TAC instructions
@@ -31,9 +31,24 @@ class Optimizer:
         """
         self.instructions = instructions
         
-        # Apply optimization passes
-        self.instructions = self.constant_folding(self.instructions)
-        self.instructions = self.dead_code_elimination(self.instructions)
+        # Apply optimization passes iteratively until no more changes
+        changed = True
+        iteration = 0
+        max_iterations = 10  # Prevent infinite loops
+        
+        while changed and iteration < max_iterations:
+            old_length = len(self.instructions)
+            
+            # Apply all optimization passes
+            self.instructions = self.constant_folding(self.instructions)
+            self.instructions = self.copy_propagation(self.instructions)
+            self.instructions = self.algebraic_simplification(self.instructions)
+            self.instructions = self.strength_reduction(self.instructions)
+            self.instructions = self.dead_code_elimination(self.instructions)
+            
+            # Check if any changes were made
+            changed = len(self.instructions) != old_length
+            iteration += 1
         
         return self.instructions
     
@@ -151,6 +166,218 @@ class Optimizer:
         
         return optimized
     
+    def copy_propagation(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
+        """
+        Copy propagation optimization - EFFICIENT VERSION
+        
+        Eliminates unnecessary copy operations by propagating the original value.
+        For example: 
+            t1 = x
+            t2 = t1
+            y = t2
+        becomes:
+            y = x
+        
+        Args:
+            instructions: Original instructions
+            
+        Returns:
+            Instructions with copy propagation applied
+        """
+        optimized = []
+        copies: Dict[str, str] = {}  # Maps variable -> its source
+        
+        for instr in instructions:
+            if isinstance(instr, TACAssign):
+                # Follow the copy chain to find the original source
+                src = instr.src
+                while src in copies:
+                    src = copies[src]
+                
+                # Check if this is a simple copy (not involving operations)
+                if src != instr.dest and self._is_temp(instr.dest):
+                    # Record the copy
+                    copies[instr.dest] = src
+                    # Still emit the instruction but with the final source
+                    optimized.append(TACAssign(instr.dest, src))
+                else:
+                    optimized.append(TACAssign(instr.dest, src))
+                    # If destination is not a temp, don't track it
+                    if not self._is_temp(instr.dest) and instr.dest in copies:
+                        del copies[instr.dest]
+            
+            elif isinstance(instr, TACBinaryOp):
+                # Propagate copies in operands
+                left = instr.left
+                while left in copies:
+                    left = copies[left]
+                
+                right = instr.right
+                while right in copies:
+                    right = copies[right]
+                
+                optimized.append(TACBinaryOp(instr.dest, left, instr.op, right))
+                
+                # Destination is redefined, remove from copies
+                if instr.dest in copies:
+                    del copies[instr.dest]
+            
+            elif isinstance(instr, TACUnaryOp):
+                # Propagate copies in operand
+                operand = instr.operand
+                while operand in copies:
+                    operand = copies[operand]
+                
+                optimized.append(TACUnaryOp(instr.dest, instr.op, operand))
+                
+                # Destination is redefined, remove from copies
+                if instr.dest in copies:
+                    del copies[instr.dest]
+            
+            elif isinstance(instr, TACIfFalse):
+                # Propagate copy in condition
+                condition = instr.condition
+                while condition in copies:
+                    condition = copies[condition]
+                
+                optimized.append(TACIfFalse(condition, instr.label))
+            
+            elif isinstance(instr, TACPrint):
+                # Propagate copy in print value
+                value = instr.value
+                while value in copies:
+                    value = copies[value]
+                
+                optimized.append(TACPrint(value))
+            
+            else:
+                # Labels, gotos, var declarations - keep as is
+                optimized.append(instr)
+        
+        return optimized
+    
+    def algebraic_simplification(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
+        """
+        Algebraic simplification optimization - EFFICIENT VERSION
+        
+        Simplifies algebraic expressions using mathematical identities:
+        - x + 0 = x
+        - x - 0 = x
+        - x * 1 = x
+        - x * 0 = 0
+        - x / 1 = x
+        - x || true = true
+        - x && false = false
+        
+        Args:
+            instructions: Original instructions
+            
+        Returns:
+            Instructions with algebraic simplification applied
+        """
+        optimized = []
+        
+        for instr in instructions:
+            if isinstance(instr, TACBinaryOp):
+                simplified = False
+                
+                # Check for identity operations
+                if instr.op == '+' and instr.right == '0':
+                    # x + 0 = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                elif instr.op == '+' and instr.left == '0':
+                    # 0 + x = x
+                    optimized.append(TACAssign(instr.dest, instr.right))
+                    simplified = True
+                elif instr.op == '-' and instr.right == '0':
+                    # x - 0 = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                elif instr.op == '*' and instr.right == '1':
+                    # x * 1 = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                elif instr.op == '*' and instr.left == '1':
+                    # 1 * x = x
+                    optimized.append(TACAssign(instr.dest, instr.right))
+                    simplified = True
+                elif instr.op == '*' and (instr.right == '0' or instr.left == '0'):
+                    # x * 0 = 0 or 0 * x = 0
+                    optimized.append(TACAssign(instr.dest, '0'))
+                    simplified = True
+                elif instr.op == '/' and instr.right == '1':
+                    # x / 1 = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                elif instr.op == '||' and (instr.left == 'true' or instr.right == 'true'):
+                    # x || true = true or true || x = true
+                    optimized.append(TACAssign(instr.dest, 'true'))
+                    simplified = True
+                elif instr.op == '||' and instr.left == 'false':
+                    # false || x = x
+                    optimized.append(TACAssign(instr.dest, instr.right))
+                    simplified = True
+                elif instr.op == '||' and instr.right == 'false':
+                    # x || false = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                elif instr.op == '&&' and (instr.left == 'false' or instr.right == 'false'):
+                    # x && false = false or false && x = false
+                    optimized.append(TACAssign(instr.dest, 'false'))
+                    simplified = True
+                elif instr.op == '&&' and instr.left == 'true':
+                    # true && x = x
+                    optimized.append(TACAssign(instr.dest, instr.right))
+                    simplified = True
+                elif instr.op == '&&' and instr.right == 'true':
+                    # x && true = x
+                    optimized.append(TACAssign(instr.dest, instr.left))
+                    simplified = True
+                
+                if not simplified:
+                    optimized.append(instr)
+            else:
+                optimized.append(instr)
+        
+        return optimized
+    
+    def strength_reduction(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
+        """
+        Strength reduction optimization - EFFICIENT VERSION
+        
+        Replaces expensive operations with cheaper equivalent ones:
+        - x * 2 -> x + x
+        - x * 4 -> x << 2 (represented as addition chain)
+        - x / 2 -> x >> 1 (represented as division, but noted)
+        
+        Args:
+            instructions: Original instructions
+            
+        Returns:
+            Instructions with strength reduction applied
+        """
+        optimized = []
+        
+        for instr in instructions:
+            if isinstance(instr, TACBinaryOp):
+                reduced = False
+                
+                # Multiply by 2: x * 2 = x + x
+                if instr.op == '*' and instr.right == '2':
+                    optimized.append(TACBinaryOp(instr.dest, instr.left, '+', instr.left))
+                    reduced = True
+                elif instr.op == '*' and instr.left == '2':
+                    optimized.append(TACBinaryOp(instr.dest, instr.right, '+', instr.right))
+                    reduced = True
+                
+                if not reduced:
+                    optimized.append(instr)
+            else:
+                optimized.append(instr)
+        
+        return optimized
+    
     def dead_code_elimination(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
         """
         Dead code elimination optimization.
@@ -229,6 +456,7 @@ class Optimizer:
     def _remove_unused_temps(self, instructions: List[TACInstruction]) -> List[TACInstruction]:
         """
         Remove assignments to temporary variables that are never used.
+        EFFICIENT VERSION - More aggressive elimination
         
         Args:
             instructions: TAC instructions
@@ -236,42 +464,51 @@ class Optimizer:
         Returns:
             Instructions with unused temps removed
         """
-        # First pass: find all used variables
-        used_vars = set()
+        # Iteratively remove unused temps until no more can be removed
+        changed = True
+        current_instructions = instructions
         
-        for instr in instructions:
-            if isinstance(instr, TACAssign):
-                if self._is_temp(instr.src):
-                    used_vars.add(instr.src)
-            elif isinstance(instr, TACBinaryOp):
-                if self._is_temp(instr.left):
-                    used_vars.add(instr.left)
-                if self._is_temp(instr.right):
-                    used_vars.add(instr.right)
-            elif isinstance(instr, TACUnaryOp):
-                if self._is_temp(instr.operand):
-                    used_vars.add(instr.operand)
-            elif isinstance(instr, TACIfFalse):
-                if self._is_temp(instr.condition):
-                    used_vars.add(instr.condition)
-            elif isinstance(instr, TACPrint):
-                if self._is_temp(instr.value):
-                    used_vars.add(instr.value)
-        
-        # Second pass: remove assignments to unused temps
-        optimized = []
-        for instr in instructions:
-            keep = True
+        while changed:
+            # First pass: find all used variables
+            used_vars = set()
             
-            if isinstance(instr, (TACAssign, TACBinaryOp, TACUnaryOp)):
-                dest = instr.dest
-                if self._is_temp(dest) and dest not in used_vars:
-                    keep = False
+            for instr in current_instructions:
+                if isinstance(instr, TACAssign):
+                    if self._is_temp(instr.src) or not self._is_temp(instr.dest):
+                        used_vars.add(instr.src)
+                elif isinstance(instr, TACBinaryOp):
+                    if self._is_temp(instr.left):
+                        used_vars.add(instr.left)
+                    if self._is_temp(instr.right):
+                        used_vars.add(instr.right)
+                elif isinstance(instr, TACUnaryOp):
+                    if self._is_temp(instr.operand):
+                        used_vars.add(instr.operand)
+                elif isinstance(instr, TACIfFalse):
+                    if self._is_temp(instr.condition):
+                        used_vars.add(instr.condition)
+                elif isinstance(instr, TACPrint):
+                    if self._is_temp(instr.value):
+                        used_vars.add(instr.value)
             
-            if keep:
-                optimized.append(instr)
+            # Second pass: remove assignments to unused temps
+            optimized = []
+            for instr in current_instructions:
+                keep = True
+                
+                if isinstance(instr, (TACAssign, TACBinaryOp, TACUnaryOp)):
+                    dest = instr.dest
+                    if self._is_temp(dest) and dest not in used_vars:
+                        keep = False
+                
+                if keep:
+                    optimized.append(instr)
+            
+            # Check if any changes were made
+            changed = len(optimized) != len(current_instructions)
+            current_instructions = optimized
         
-        return optimized
+        return current_instructions
     
     # ========================================================================
     # Helper methods

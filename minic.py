@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 MiniC Compiler - Main Entry Point
 
@@ -25,7 +25,7 @@ from pathlib import Path
 # Import compiler modules
 from compiler.lexer import lex, LexerError
 from compiler.parser import parse, ParseError
-from compiler.semantic import analyze, SemanticError
+from compiler.semantic import analyze, SemanticError, print_semantic_analysis
 from compiler.ir_generator import generate_ir, print_ir
 from compiler.optimizer import optimize
 from compiler.asmgen import AssemblyGenerator
@@ -119,7 +119,7 @@ class MiniCCompiler:
             
             if self.show_ast:
                 print("\n" + "=" * 70)
-                print("ABSTRACT SYNTAX TREE (AST):")
+                print("ABSTRACT SYNTAX TREE (AST) - Tree Format:")
                 print("=" * 70)
                 print(print_ast(ast))
                 print("=" * 70 + "\n")
@@ -127,6 +127,13 @@ class MiniCCompiler:
             # Phase 3: Semantic Analysis
             print("Phase 3: Semantic Analysis...")
             analyze(ast)
+            
+            if self.show_ast:
+                print("\n" + "=" * 70)
+                print("SEMANTIC ANALYSIS - Tree Format:")
+                print("=" * 70)
+                print(print_semantic_analysis(ast))
+                print("=" * 70 + "\n")
             
             # Phase 4: Intermediate Code Generation (TAC)
             print("Phase 4: Intermediate Code Generation (TAC)...")
@@ -171,7 +178,7 @@ class MiniCCompiler:
                 print(output_code)
                 print("=" * 70 + "\n")
             
-            print("\n✓ Compilation successful!")
+            print("\n[OK] Compilation successful!")
             return output_code
             
         except LexerError as e:
@@ -269,7 +276,7 @@ For more information, see README.md
         binary_name = output_path.stem
         binary_path = build_dir / binary_name
         
-        print(f"\n✓ Generated assembly code written to: {args.output}")
+        print(f"\n[OK] Generated assembly code written to: {args.output}")
         print(f"\nTo assemble and run:")
         print(f"  gcc {args.output} -o {binary_path}")
         print(f"  ./{binary_path}")
@@ -290,3 +297,4 @@ For more information, see README.md
 
 if __name__ == '__main__':
     sys.exit(main())
+
